@@ -827,12 +827,18 @@
                         if (student) {
                             const li = document.createElement('li');
                             li.className = 'student-item';
+                            
+                            // Add time information for late students
+                            const timeInfo = sessionRecord.status === 'Late' 
+                                ? ` (${sessionRecord.minutesLate} mins late)`
+                                : '';
+                            
                             li.innerHTML = `
                                 <div class="student-info">
                                     <div class="student-name">${student.name}</div>
                                     <div class="student-program">${student.program}</div>
                                 </div>
-                                <span class="status-badge status-${sessionRecord.status.toLowerCase()}">${sessionRecord.status}</span>
+                                <span class="status-badge status-${sessionRecord.status.toLowerCase()}">${sessionRecord.status}${timeInfo}</span>
                             `;
                             studentList.appendChild(li);
                         }
@@ -1099,7 +1105,6 @@
                 // Check if already scanned in this session
                 const existingRecord = attendanceDataForCurrentSession.find(rec => rec.id === id);
                 if (existingRecord) {
-                    // Vibrate with error pattern
                     if (navigator.vibrate) {
                         navigator.vibrate([100, 50, 100]);
                     }
@@ -1108,14 +1113,17 @@
                 }
 
                 const currentTime = new Date();
-                const lateThresholdMinutes = 15;
+                const lateThresholdMinutes = 15; // 15 minutes threshold
                 const lateTime = new Date(classStartTime.getTime() + lateThresholdMinutes * 60 * 1000);
                 const determinedStatus = currentTime > lateTime ? 'Late' : 'Present';
+
+                // Calculate minutes late for display
+                const minutesLate = determinedStatus === 'Late' ? 
+                    Math.floor((currentTime - classStartTime) / (1000 * 60)) : 0;
 
                 let student = studentsDB.find(s => s.id === id);
 
                 if (student) {
-                    // Vibrate with success pattern
                     if (navigator.vibrate) {
                         navigator.vibrate(200);
                     }
@@ -1127,42 +1135,51 @@
                         student.presentCount = (student.presentCount || 0) + 1;
                     }
 
-                    // Add attendance record
-                    student.attendanceHistory.push({
+                    // Add attendance record with time details
+                    const attendanceRecord = {
                         sessionId: currentSessionId,
                         status: determinedStatus,
                         course: currentCourse,
                         semester: currentSemester,
                         classTime: currentClassTimeStr,
-                        timestamp: new Date().toISOString()
-                    });
+                        timestamp: new Date().toISOString(),
+                        minutesLate: minutesLate
+                    };
 
-                    // Add to current session display
+                    student.attendanceHistory.push(attendanceRecord);
+
+                    // Add to current session display with time info
                     attendanceDataForCurrentSession.push({
                         id: student.id,
                         name: student.name,
                         program: student.program,
-                        status: determinedStatus
+                        status: determinedStatus,
+                        minutesLate: minutesLate
                     });
 
                     saveStudentsDB();
                     refreshStudentListUI();
                     updateExportSubjectOptions();
-                    showPermissionModal(`${student.name} marked as ${determinedStatus}`, 'info');
+
+                    // Show appropriate message
+                    const message = determinedStatus === 'Late' 
+                        ? `${student.name} marked as Late (${minutesLate} minutes after class start)`
+                        : `${student.name} marked as Present`;
+                    showPermissionModal(message, determinedStatus.toLowerCase());
                 } else {
-                    // Vibrate with new student pattern
+                    // New student handling
                     if (navigator.vibrate) {
                         navigator.vibrate([100, 50, 200]);
                     }
                     
-                    // New student
                     pendingStudentScan = {
                         id: id,
                         status: determinedStatus,
                         course: currentCourse,
                         semester: currentSemester,
                         classTime: currentClassTimeStr,
-                        sessionId: currentSessionId
+                        sessionId: currentSessionId,
+                        minutesLate: minutesLate
                     };
                     showNewStudentModal(id);
                 }
