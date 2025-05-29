@@ -739,7 +739,8 @@
             let currentClassTimeStr = null;
             let currentSessionId = null;
             let attendanceDataForCurrentSession = [];
-            let qrScanningActive = false;
+            let nfcScanning = false;
+            let qrScanning = false;
             let pendingStudentScan = null;
 
             // --- Local Storage Helper Functions ---
@@ -931,17 +932,20 @@
 
             // --- QR Code Scanner Functions ---
             function startQrScanner() {
+                if (qrScanning) {
+                    stopQrScanner();
+                    return;
+                }
+
                 qrVideo.style.display = 'block';
                 qrCanvas.style.display = 'block';
                 qrScannerContainer.classList.remove('hidden');
                 
-                // Check if camera access is supported
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    showPermissionModal('Camera access is not supported in your browser.', 'error');
+                    showStatusToast('Camera access is not supported in your browser.');
                     return;
                 }
 
-                // Request camera access with specific constraints
                 navigator.mediaDevices.getUserMedia({ 
                     video: { 
                         facingMode: 'environment',
@@ -955,27 +959,42 @@
                     qrVideo.style.width = '100%';
                     qrVideo.style.height = 'auto';
                     qrVideo.style.display = 'block';
-                    qrCanvas.style.display = 'none'; // Hide canvas initially
+                    qrCanvas.style.display = 'none';
                     qrVideo.play()
                         .then(() => {
-                            qrScanningActive = true;
+                            qrScanning = true;
+                            scanQrBtn.classList.add('scanning-active');
+                            scanQrBtn.textContent = 'Stop QR Scan';
                             requestAnimationFrame(tick);
                         })
                         .catch(err => {
                             console.error('Error playing video:', err);
-                            showPermissionModal('Error starting camera stream. Please try again.', 'error');
+                            showStatusToast('Error starting camera stream. Please try again.');
                             stopQrScanner();
                         });
                 })
                 .catch(err => {
                     console.error('Camera error:', err);
-                    showPermissionModal('Could not access the camera. Please ensure camera permissions are granted.', 'error');
+                    showStatusToast('Could not access the camera. Please ensure camera permissions are granted.');
                     stopQrScanner();
                 });
             }
 
+            function stopQrScanner() {
+                qrScanning = false;
+                if (qrVideo.srcObject) {
+                    qrVideo.srcObject.getTracks().forEach(track => track.stop());
+                }
+                qrVideo.srcObject = null;
+                qrVideo.style.display = 'none';
+                qrCanvas.style.display = 'none';
+                qrScannerContainer.classList.add('hidden');
+                scanQrBtn.classList.remove('scanning-active');
+                scanQrBtn.textContent = 'QR Code';
+            }
+
             function tick() {
-                if (!qrScanningActive) return;
+                if (!qrScanning) return;
 
                 if (qrVideo.readyState === qrVideo.HAVE_ENOUGH_DATA) {
                     qrCanvas.height = qrVideo.videoHeight;
@@ -988,27 +1007,13 @@
                     
                     if (code) {
                         const scannedId = code.data.trim();
-                        stopQrScanner();
+                        if (navigator.vibrate) {
+                            navigator.vibrate(200);
+                        }
                         processScannedId(scannedId);
-                        return;
                     }
                 }
                 requestAnimationFrame(tick);
-            }
-
-            function stopQrScanner() {
-                qrScanningActive = false;
-                qrVideo.pause();
-                if (qrVideo.srcObject) {
-                    qrVideo.srcObject.getTracks().forEach(track => track.stop());
-                }
-                qrVideo.srcObject = null;
-                qrVideo.style.display = 'none';
-                qrCanvas.style.display = 'none';
-                qrScannerContainer.classList.add('hidden');
-                scanQrBtn.classList.remove('scanning-active');
-                scanQrBtn.classList.add('scan-success');
-                setTimeout(() => scanQrBtn.classList.remove('scan-success'), 1000);
             }
 
             // --- NFC Scanning Functionality ---
@@ -1035,22 +1040,26 @@
                     return;
                 }
 
+                if (nfcScanning) {
+                    stopNfcScan();
+                    return;
+                }
+
                 const ndef = new NDEFReader();
                 ndef.scan().then(() => {
+                    nfcScanning = true;
                     scanNfcBtn.classList.add('scanning-active');
+                    scanNfcBtn.textContent = 'Stop NFC Scan';
                     showNfcAnimation(true);
                     
                     ndef.onreadingerror = () => {
                         if (navigator.vibrate) {
                             navigator.vibrate([100, 50, 100]);
                         }
-                        showStatusToast('NFC read error. Try again.');
-                        showNfcAnimation(false);
-                        scanNfcBtn.classList.remove('scanning-active');
+                        showStatusToast('NFC read error. Continuing to scan...');
                     };
                     
                     ndef.onreading = event => {
-                        showNfcAnimation(false);
                         let nfcId = '';
                         if (event.serialNumber) {
                             nfcId = event.serialNumber;
@@ -1069,21 +1078,16 @@
                         }
                         
                         if (nfcId) {
-                            // Vibrate on successful scan
                             if (navigator.vibrate) {
                                 navigator.vibrate(200);
                             }
                             
-                            ndef.onreading = null;
-                            scanNfcBtn.classList.remove('scanning-active');
-                            scanNfcBtn.classList.add('scan-success');
-                            setTimeout(() => scanNfcBtn.classList.remove('scan-success'), 1000);
                             processScannedId(nfcId.trim());
                         } else {
                             if (navigator.vibrate) {
                                 navigator.vibrate([100, 50, 100]);
                             }
-                            showStatusToast('No valid ID found on NFC tag.');
+                            showStatusToast('No valid ID found on NFC tag. Continuing to scan...');
                         }
                     };
                 }).catch(error => {
@@ -1091,14 +1095,23 @@
                         navigator.vibrate([100, 50, 100]);
                     }
                     showStatusToast('NFC error: ' + error.message);
-                    scanNfcBtn.classList.remove('scanning-active');
+                    stopNfcScan();
                 });
+            }
+
+            function stopNfcScan() {
+                nfcScanning = false;
+                scanNfcBtn.classList.remove('scanning-active');
+                scanNfcBtn.textContent = 'NFC';
+                showNfcAnimation(false);
             }
 
             // --- Core ID Processing Logic ---
             function processScannedId(id) {
                 if (!currentSessionId) {
-                    showPermissionModal('Session not started. Please set course, semester, and class time.', 'error');
+                    showStatusToast('Session not started. Please set course, semester, and class time.');
+                    stopNfcScan();
+                    stopQrScanner();
                     return;
                 }
 
@@ -1108,16 +1121,14 @@
                     if (navigator.vibrate) {
                         navigator.vibrate([100, 50, 100]);
                     }
-                    showPermissionModal(`${existingRecord.name} already marked as ${existingRecord.status} for this session.`, 'error');
+                    showStatusToast(`${existingRecord.name} already marked as ${existingRecord.status} for this session.`);
                     return;
                 }
 
                 const currentTime = new Date();
-                const lateThresholdMinutes = 15; // 15 minutes threshold
+                const lateThresholdMinutes = 15;
                 const lateTime = new Date(classStartTime.getTime() + lateThresholdMinutes * 60 * 1000);
                 const determinedStatus = currentTime > lateTime ? 'Late' : 'Present';
-
-                // Calculate minutes late for display
                 const minutesLate = determinedStatus === 'Late' ? 
                     Math.floor((currentTime - classStartTime) / (1000 * 60)) : 0;
 
@@ -1165,9 +1176,11 @@
                     const message = determinedStatus === 'Late' 
                         ? `${student.name} marked as Late (${minutesLate} minutes after class start)`
                         : `${student.name} marked as Present`;
-                    showPermissionModal(message, determinedStatus.toLowerCase());
+                    showStatusToast(message, determinedStatus.toLowerCase());
                 } else {
-                    // New student handling
+                    // Stop scanning when new student needs to be registered
+                    stopNfcScan();
+                    stopQrScanner();
                     if (navigator.vibrate) {
                         navigator.vibrate([100, 50, 200]);
                     }
@@ -1196,6 +1209,9 @@
             function hideNewStudentModal() {
                 newStudentModal.classList.remove('active');
                 pendingStudentScan = null;
+                // Restart the last active scanning mode
+                if (nfcScanning) startNfcScan();
+                if (qrScanning) startQrScanner();
             }
 
             // --- Event Listeners ---
@@ -1237,12 +1253,8 @@
             });
 
             logoutBtn.addEventListener('click', () => {
-                // Stop NFC scanning if active
-                showNfcAnimation(false);
-                // Stop QR scanning if active
-                if (qrScanningActive) {
-                    stopQrScanner();
-                }
+                stopNfcScan();
+                stopQrScanner();
                 localStorage.removeItem('loggedInUser');
                 loggedInUser = null;
                 currentCourse = null;
@@ -1260,7 +1272,7 @@
                 const timeInput = document.getElementById('class-time').value;
 
                 if (!courseInput || !semesterInput || !timeInput) {
-                    showPermissionModal('Please fill all session details to start.', 'error');
+                    showStatusToast('Please fill all session details to start.', 'error');
                     return;
                 }
 
@@ -1294,30 +1306,11 @@
                 attendanceDisplay.classList.remove('hidden');
                 updateStatusCounters();
                 refreshStudentListUI();
-                showPermissionModal(`Session for ${currentCourse} (${currentSemester}) at ${currentClassTimeStr} started.`, 'info');
+                showStatusToast(`Session for ${currentCourse} (${currentSemester}) at ${currentClassTimeStr} started.`, 'info');
             });
 
-            scanQrBtn.addEventListener('click', () => {
-                if (!currentSessionId) {
-                    alert('Please start a session first before scanning.');
-                    return;
-                }
-                if (qrScanningActive) {
-                    stopQrScanner();
-                    return;
-                }
-                qrScanningActive = true;
-                scanQrBtn.classList.add('scanning-active');
-                startQrScanner();
-            });
-
-            scanNfcBtn.addEventListener('click', () => {
-                if (!currentSessionId) {
-                    alert('Please start a session first before scanning NFC.');
-                    return;
-                }
-                startNfcScan();
-            });
+            scanQrBtn.addEventListener('click', startQrScanner);
+            scanNfcBtn.addEventListener('click', startNfcScan);
 
             exportExcelBtn.addEventListener('click', () => {
                 if (studentsDB.length === 0) {
@@ -1546,26 +1539,38 @@
                 };
 
                 if (pendingStudentScan && pendingStudentScan.id === id) {
-                    if (pendingStudentScan.status === 'Late') {
+                    // Calculate minutes late again to ensure accuracy
+                    const currentTime = new Date();
+                    const lateThresholdMinutes = 15;
+                    const lateTime = new Date(classStartTime.getTime() + lateThresholdMinutes * 60 * 1000);
+                    const determinedStatus = currentTime > lateTime ? 'Late' : 'Present';
+                    const minutesLate = determinedStatus === 'Late' ? 
+                        Math.floor((currentTime - classStartTime) / (1000 * 60)) : 0;
+
+                    if (determinedStatus === 'Late') {
                         newStudent.lateCount = 1;
                     } else {
                         newStudent.presentCount = 1;
                     }
 
-                    newStudent.attendanceHistory.push({
+                    const attendanceRecord = {
                         sessionId: pendingStudentScan.sessionId,
-                        status: pendingStudentScan.status,
+                        status: determinedStatus,
                         course: pendingStudentScan.course,
                         semester: pendingStudentScan.semester,
                         classTime: pendingStudentScan.classTime,
-                        timestamp: new Date().toISOString()
-                    });
+                        timestamp: new Date().toISOString(),
+                        minutesLate: minutesLate
+                    };
+
+                    newStudent.attendanceHistory.push(attendanceRecord);
 
                     attendanceDataForCurrentSession.push({
                         id: newStudent.id,
                         name: newStudent.name,
                         program: newStudent.program,
-                        status: pendingStudentScan.status
+                        status: determinedStatus,
+                        minutesLate: minutesLate
                     });
                 }
 
@@ -1579,18 +1584,6 @@
             });
 
             cancelStudentBtn.addEventListener('click', hideNewStudentModal);
-
-            // Replace showPermissionModal with conditional toast/animation
-            function showPermissionModal(message, type) {
-                if (message === 'Ready to scan NFC tag') {
-                    showNfcAnimation(true);
-                } else if (message.includes('marked as')) {
-                    // Don't show anything for attendance confirmation
-                    return;
-                } else {
-                    showStatusToast(message);
-                }
-            }
         });
     </script>
 </body>
