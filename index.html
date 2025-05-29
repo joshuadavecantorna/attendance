@@ -415,6 +415,89 @@
                 flex-direction: column;
             }
         }
+
+        /* NFC Scanning Animation */
+        .nfc-animation-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 12px;
+            display: none;
+            z-index: 1000;
+            text-align: center;
+        }
+
+        .nfc-animation {
+            width: 120px;
+            height: 200px;
+            position: relative;
+            margin: 0 auto;
+        }
+
+        .phone-outline {
+            width: 100%;
+            height: 100%;
+            border: 3px solid #fff;
+            border-radius: 20px;
+            position: relative;
+        }
+
+        .nfc-waves {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 40px;
+        }
+
+        .wave {
+            position: absolute;
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: wave-animation 1.5s infinite;
+            opacity: 0;
+        }
+
+        .wave:nth-child(1) { animation-delay: 0s; }
+        .wave:nth-child(2) { animation-delay: 0.5s; }
+        .wave:nth-child(3) { animation-delay: 1s; }
+
+        @keyframes wave-animation {
+            0% {
+                width: 0px;
+                height: 0px;
+                opacity: 1;
+            }
+            100% {
+                width: 40px;
+                height: 40px;
+                opacity: 0;
+            }
+        }
+
+        /* Status Toast */
+        .status-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .status-toast.show {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -538,6 +621,23 @@
                 </div>
             </div>
 
+            <!-- Add NFC Animation Container -->
+            <div class="nfc-animation-container" id="nfc-animation">
+                <div class="nfc-animation">
+                    <div class="phone-outline">
+                        <div class="nfc-waves">
+                            <div class="wave"></div>
+                            <div class="wave"></div>
+                            <div class="wave"></div>
+                        </div>
+                    </div>
+                </div>
+                <p style="color: white; margin-top: 15px;">Scanning for NFC tag...</p>
+            </div>
+
+            <!-- Add Status Toast -->
+            <div class="status-toast" id="status-toast"></div>
+
             <button id="logout-btn" class="btn btn-outline btn-block mt-3">Logout</button>
         </div>
     </div>
@@ -599,6 +699,7 @@
             const registerBtn = document.getElementById('register-btn');
             const loginError = document.getElementById('login-error');
             const registerError = document.getElementById('register-error');
+            const statusToast = document.getElementById('status-toast');
 
             // Initialize default admin account if none exists
             if (!localStorage.getItem('user_admin@usm.edu.ph')) {
@@ -884,26 +985,41 @@
             }
 
             // --- NFC Scanning Functionality ---
+            function showStatusToast(message, duration = 2000) {
+                statusToast.textContent = message;
+                statusToast.classList.add('show');
+                setTimeout(() => {
+                    statusToast.classList.remove('show');
+                }, duration);
+            }
+
+            function showNfcAnimation(show) {
+                const animation = document.getElementById('nfc-animation');
+                animation.style.display = show ? 'block' : 'none';
+            }
+
             function startNfcScan() {
                 if (!('NDEFReader' in window)) {
-                    showPermissionModal('NFC not supported on this device.', 'error');
+                    showStatusToast('NFC not supported on this device.');
                     return;
                 }
 
                 const ndef = new NDEFReader();
                 ndef.scan().then(() => {
                     scanNfcBtn.classList.add('scanning-active');
-                    showPermissionModal('Ready to scan NFC tag', 'info');
+                    showNfcAnimation(true);
                     
                     ndef.onreadingerror = () => {
                         if (navigator.vibrate) {
                             navigator.vibrate([100, 50, 100]);
                         }
-                        showPermissionModal('NFC read error. Try again.', 'error');
+                        showStatusToast('NFC read error. Try again.');
+                        showNfcAnimation(false);
                         scanNfcBtn.classList.remove('scanning-active');
                     };
                     
                     ndef.onreading = event => {
+                        showNfcAnimation(false);
                         let nfcId = '';
                         if (event.serialNumber) {
                             nfcId = event.serialNumber;
@@ -936,14 +1052,14 @@
                             if (navigator.vibrate) {
                                 navigator.vibrate([100, 50, 100]);
                             }
-                            showPermissionModal('No valid ID found on NFC tag.', 'error');
+                            showStatusToast('No valid ID found on NFC tag.');
                         }
                     };
                 }).catch(error => {
                     if (navigator.vibrate) {
                         navigator.vibrate([100, 50, 100]);
                     }
-                    showPermissionModal('NFC error: ' + error.message, 'error');
+                    showStatusToast('NFC error: ' + error.message);
                     scanNfcBtn.classList.remove('scanning-active');
                 });
             }
@@ -1025,10 +1141,6 @@
                     };
                     showNewStudentModal(id);
                 }
-            }
-
-            function showPermissionModal(message, type) {
-                alert(message); // Using simple alert for now, can be replaced with a modal
             }
 
             // --- New Student Modal Functions ---
@@ -1420,6 +1532,18 @@
             });
 
             cancelStudentBtn.addEventListener('click', hideNewStudentModal);
+
+            // Replace showPermissionModal with conditional toast/animation
+            function showPermissionModal(message, type) {
+                if (message === 'Ready to scan NFC tag') {
+                    showNfcAnimation(true);
+                } else if (message.includes('marked as')) {
+                    // Don't show anything for attendance confirmation
+                    return;
+                } else {
+                    showStatusToast(message);
+                }
+            }
         });
     </script>
 </body>
