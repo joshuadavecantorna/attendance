@@ -302,10 +302,20 @@
             margin: 1.5rem 0;
             border-radius: 8px;
             overflow: hidden;
+            background-color: #000;
+            min-height: 300px;
         }
 
-        #qr-video, #qr-canvas {
+        #qr-video {
             width: 100%;
+            height: auto;
+            border-radius: 8px;
+            display: none;
+        }
+
+        #qr-canvas {
+            width: 100%;
+            height: auto;
             border-radius: 8px;
             display: none;
         }
@@ -795,6 +805,7 @@
             function startQrScanner() {
                 qrVideo.style.display = 'block';
                 qrCanvas.style.display = 'block';
+                qrScannerContainer.classList.remove('hidden');
                 
                 // Check if camera access is supported
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -813,6 +824,10 @@
                 .then(stream => {
                     qrVideo.srcObject = stream;
                     qrVideo.setAttribute('playsinline', true);
+                    qrVideo.style.width = '100%';
+                    qrVideo.style.height = 'auto';
+                    qrVideo.style.display = 'block';
+                    qrCanvas.style.display = 'none'; // Hide canvas initially
                     qrVideo.play()
                         .then(() => {
                             qrScanningActive = true;
@@ -862,6 +877,7 @@
                 qrVideo.srcObject = null;
                 qrVideo.style.display = 'none';
                 qrCanvas.style.display = 'none';
+                qrScannerContainer.classList.add('hidden');
                 scanQrBtn.classList.remove('scanning-active');
                 scanQrBtn.classList.add('scan-success');
                 setTimeout(() => scanQrBtn.classList.remove('scan-success'), 1000);
