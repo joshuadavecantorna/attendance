@@ -80,31 +80,16 @@
             padding: 1rem;
         }
 
-        .logo img {
-            width: 120px;
-            height: 120px;
-            margin-bottom: 1rem;
-            object-fit: contain;
-        }
-
-        .logo-fallback {
-            width: 120px;
-            height: 120px;
-            margin: 0 auto 1rem;
-            background-color: var(--primary);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 2rem;
-            font-weight: bold;
-        }
-
         .logo h3 {
             color: var(--primary);
             font-weight: 600;
             margin-bottom: 0.5rem;
+            font-size: 1.75rem;
+        }
+
+        .logo p {
+            color: var(--text-light);
+            font-size: 1.1rem;
         }
 
         /* Form Elements */
@@ -528,173 +513,165 @@
 <body>
     <div class="container fade-in">
         <div class="logo">
-            <img src="https://www.usm.edu.ph/wp-content/uploads/2024/07/usm_logo_1954.png" 
-                     alt="USM Logo" 
-                     onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='flex'"
-                     crossorigin="anonymous">
-                <div id="logo-fallback" class="logo-fallback" style="display: none;">
-                    USM
+            <h3>University of Southern Mindanao</h3>
+            <p>Attendance Management System</p>
+        </div>
+
+        <!-- Authentication Section -->
+        <div id="auth-section">
+            <div class="card" id="login-form">
+                <h2 class="text-center">Sign In</h2>
+                <div class="form-group">
+                    <label for="login-username">Email Address</label>
+                    <input type="text" id="login-username" placeholder="your@email.com" required />
+                    <div id="login-error" class="error-message">Invalid email or password</div>
                 </div>
-                <h3>University of Southern Mindanao</h3>
-                <p>Attendance Management System</p>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required />
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="login-btn">Sign In</button>
+                <p class="text-center mt-3">
+                    Don't have an account? <a href="#" id="show-register" class="text-primary">Register</a>
+                </p>
             </div>
 
-            <!-- Authentication Section -->
-            <div id="auth-section">
-                <div class="card" id="login-form">
-                    <h2 class="text-center">Sign In</h2>
-                    <div class="form-group">
-                        <label for="login-username">Email Address</label>
-                        <input type="text" id="login-username" placeholder="your@email.com" required />
-                        <div id="login-error" class="error-message">Invalid email or password</div>
-                    </div>
-                    <div class="form-group">
-                        <label for="login-password">Password</label>
-                        <input type="password" id="login-password" placeholder="••••••••" required />
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-block" id="login-btn">Sign In</button>
-                    <p class="text-center mt-3">
-                        Don't have an account? <a href="#" id="show-register" class="text-primary">Register</a>
-                    </p>
+            <div class="card hidden" id="register-form">
+                <h2 class="text-center">Create Account</h2>
+                <div class="form-group">
+                    <label for="register-username">Email Address</label>
+                    <input type="text" id="register-username" placeholder="your@email.com" required />
+                    <div id="register-error" class="error-message">Email already exists</div>
                 </div>
-
-                <div class="card hidden" id="register-form">
-                    <h2 class="text-center">Create Account</h2>
-                    <div class="form-group">
-                        <label for="register-username">Email Address</label>
-                        <input type="text" id="register-username" placeholder="your@email.com" required />
-                        <div id="register-error" class="error-message">Email already exists</div>
-                    </div>
-                    <div class="form-group">
-                        <label for="register-password">Password</label>
-                        <input type="password" id="register-password" placeholder="••••••••" required />
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-block" id="register-btn">Register</button>
-                    <p class="text-center mt-3">
-                        Already have an account? <a href="#" id="show-login" class="text-primary">Sign In</a>
-                    </p>
+                <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <input type="password" id="register-password" placeholder="••••••••" required />
                 </div>
-            </div>
-
-            <!-- Attendance Section (Hidden Initially) -->
-            <div id="attendance-section" class="hidden">
-                <!-- Session Settings -->
-                <div class="card" id="session-settings">
-                    <h3>Start New Session</h3>
-                    <div class="form-group">
-                        <label for="course">Course</label>
-                        <input type="text" id="course" placeholder="e.g., CS 101" required />
-                    </div>
-                    <div class="form-group">
-                        <label for="semester">Semester</label>
-                        <select id="semester" required>
-                            <option value="">Select semester</option>
-                            <option value="1st Sem Midterm">1st Sem Midterm</option>
-                            <option value="1st Sem Final">1st Sem Final</option>
-                            <option value="2nd Sem Midterm">2nd Sem Midterm</option>
-                            <option value="2nd Sem Final">2nd Sem Final</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="class-time">Class Time</label>
-                        <input type="time" id="class-time" required />
-                    </div>
-                    <button id="start-session-btn" class="btn btn-primary btn-block">Start Session</button>
-                </div>
-
-                <!-- Attendance Capture -->
-                <div class="card hidden" id="attendance-capture">
-                    <h3 class="text-center">Mark Attendance</h3>
-                    
-                    <div class="status-counters">
-                        <div class="counter">
-                            <div class="counter-value" id="present-count">0</div>
-                            <div class="counter-label">Present</div>
-                        </div>
-                        <div class="counter">
-                            <div class="counter-value" id="late-count">0</div>
-                            <div class="counter-label">Late</div>
-                        </div>
-                    </div>
-
-                    <div class="btn-group">
-                        <button id="scan-nfc-btn" class="btn btn-secondary">
-                            <span class="icon">📶</span> NFC
-                        </button>
-                        <button id="scan-qr-btn" class="btn btn-secondary">
-                            <span class="icon">🔍</span> QR Code
-                        </button>
-                    </div>
-
-                    <div class="scanner-container hidden" id="qr-scanner">
-                        <video id="qr-video" playsinline></video>
-                        <canvas id="qr-canvas"></canvas>
-                        <div class="scanner-overlay">Point camera at QR code</div>
-                    </div>
-                </div>
-
-                <!-- Attendance Display -->
-                <div class="card hidden" id="attendance-display">
-                    <h3>Attendance Records</h3>
-                    <ul class="student-list" id="student-list">
-                        <!-- Student items will be added here dynamically -->
-                    </ul>
-                    <div class="export-options">
-                        <h4>Export Attendance Data</h4>
-                        <select id="export-subject-select">
-                            <option value="current">Current Session Only</option>
-                            <option value="all">All Subjects</option>
-                            <!-- Options will be populated dynamically -->
-                        </select>
-                        <button id="export-excel-btn" class="btn btn-outline btn-block mt-3">
-                            Export to Excel
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Add NFC Animation Container -->
-                <div class="nfc-animation-container" id="nfc-animation">
-                    <div class="nfc-animation">
-                        <div class="phone-outline">
-                            <div class="nfc-waves">
-                                <div class="wave"></div>
-                                <div class="wave"></div>
-                                <div class="wave"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <p style="color: white; margin-top: 15px;">Scanning for NFC tag...</p>
-                </div>
-
-                <!-- Add Status Toast -->
-                <div class="status-toast" id="status-toast"></div>
-
-                <button id="logout-btn" class="btn btn-outline btn-block mt-3">Logout</button>
+                <button type="submit" class="btn btn-primary btn-block" id="register-btn">Register</button>
+                <p class="text-center mt-3">
+                    Already have an account? <a href="#" id="show-login" class="text-primary">Sign In</a>
+                </p>
             </div>
         </div>
 
-        <!-- New Student Modal -->
-        <div class="modal" id="new-student-modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Register New Student</h3>
+        <!-- Attendance Section (Hidden Initially) -->
+        <div id="attendance-section" class="hidden">
+            <!-- Session Settings -->
+            <div class="card" id="session-settings">
+                <h3>Start New Session</h3>
+                <div class="form-group">
+                    <label for="course">Course</label>
+                    <input type="text" id="course" placeholder="e.g., CS 101" required />
                 </div>
-                <form id="new-student-form">
-                    <input type="hidden" id="student-id" />
-                    <div class="form-group">
-                        <label for="student-name">Full Name</label>
-                        <input type="text" id="student-name" placeholder="Juan Dela Cruz" required />
-                    </div>
-                    <div class="form-group">
-                        <label for="student-program">Program</label>
-                        <input type="text" id="student-program" placeholder="BS Computer Science" required />
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" id="cancel-student-btn" class="btn btn-outline">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save Student</button>
-                    </div>
-                </form>
+                <div class="form-group">
+                    <label for="semester">Semester</label>
+                    <select id="semester" required>
+                        <option value="">Select semester</option>
+                        <option value="1st Sem Midterm">1st Sem Midterm</option>
+                        <option value="1st Sem Final">1st Sem Final</option>
+                        <option value="2nd Sem Midterm">2nd Sem Midterm</option>
+                        <option value="2nd Sem Final">2nd Sem Final</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="class-time">Class Time</label>
+                    <input type="time" id="class-time" required />
+                </div>
+                <button id="start-session-btn" class="btn btn-primary btn-block">Start Session</button>
             </div>
+
+            <!-- Attendance Capture -->
+            <div class="card hidden" id="attendance-capture">
+                <h3 class="text-center">Mark Attendance</h3>
+                
+                <div class="status-counters">
+                    <div class="counter">
+                        <div class="counter-value" id="present-count">0</div>
+                        <div class="counter-label">Present</div>
+                    </div>
+                    <div class="counter">
+                        <div class="counter-value" id="late-count">0</div>
+                        <div class="counter-label">Late</div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button id="scan-nfc-btn" class="btn btn-secondary">
+                        <span class="icon">📶</span> NFC
+                    </button>
+                    <button id="scan-qr-btn" class="btn btn-secondary">
+                        <span class="icon">🔍</span> QR Code
+                    </button>
+                </div>
+
+                <div class="scanner-container hidden" id="qr-scanner">
+                    <video id="qr-video" playsinline></video>
+                    <canvas id="qr-canvas"></canvas>
+                    <div class="scanner-overlay">Point camera at QR code</div>
+                </div>
+            </div>
+
+            <!-- Attendance Display -->
+            <div class="card hidden" id="attendance-display">
+                <h3>Attendance Records</h3>
+                <ul class="student-list" id="student-list">
+                    <!-- Student items will be added here dynamically -->
+                </ul>
+                <div class="export-options">
+                    <h4>Export Attendance Data</h4>
+                    <select id="export-subject-select">
+                        <option value="current">Current Session Only</option>
+                        <option value="all">All Subjects</option>
+                        <!-- Options will be populated dynamically -->
+                    </select>
+                    <button id="export-excel-btn" class="btn btn-outline btn-block mt-3">
+                        Export to Excel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Add NFC Animation Container -->
+            <div class="nfc-animation-container" id="nfc-animation">
+                <div class="nfc-animation">
+                    <div class="phone-outline">
+                        <div class="nfc-waves">
+                            <div class="wave"></div>
+                            <div class="wave"></div>
+                            <div class="wave"></div>
+                        </div>
+                    </div>
+                </div>
+                <p style="color: white; margin-top: 15px;">Scanning for NFC tag...</p>
+            </div>
+
+            <!-- Add Status Toast -->
+            <div class="status-toast" id="status-toast"></div>
+
+            <button id="logout-btn" class="btn btn-outline btn-block mt-3">Logout</button>
+        </div>
+    </div>
+
+    <!-- New Student Modal -->
+    <div class="modal" id="new-student-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Register New Student</h3>
+            </div>
+            <form id="new-student-form">
+                <input type="hidden" id="student-id" />
+                <div class="form-group">
+                    <label for="student-name">Full Name</label>
+                    <input type="text" id="student-name" placeholder="Juan Dela Cruz" required />
+                </div>
+                <div class="form-group">
+                    <label for="student-program">Program</label>
+                    <input type="text" id="student-program" placeholder="BS Computer Science" required />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="cancel-student-btn" class="btn btn-outline">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Student</button>
+                </div>
+            </form>
         </div>
     </div>
 
