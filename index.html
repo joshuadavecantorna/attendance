@@ -795,18 +795,40 @@
             function startQrScanner() {
                 qrVideo.style.display = 'block';
                 qrCanvas.style.display = 'block';
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-                    .then(stream => {
-                        qrVideo.srcObject = stream;
-                        qrVideo.setAttribute('playsinline', true);
-                        qrVideo.play();
-                        requestAnimationFrame(tick);
-                    })
-                    .catch(err => {
-                        alert('Camera access error: ' + err.message);
-                        console.error('Camera error:', err);
-                        stopQrScanner();
-                    });
+                
+                // Check if camera access is supported
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    showPermissionModal('Camera access is not supported in your browser.', 'error');
+                    return;
+                }
+
+                // Request camera access with specific constraints
+                navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    } 
+                })
+                .then(stream => {
+                    qrVideo.srcObject = stream;
+                    qrVideo.setAttribute('playsinline', true);
+                    qrVideo.play()
+                        .then(() => {
+                            qrScanningActive = true;
+                            requestAnimationFrame(tick);
+                        })
+                        .catch(err => {
+                            console.error('Error playing video:', err);
+                            showPermissionModal('Error starting camera stream. Please try again.', 'error');
+                            stopQrScanner();
+                        });
+                })
+                .catch(err => {
+                    console.error('Camera error:', err);
+                    showPermissionModal('Could not access the camera. Please ensure camera permissions are granted.', 'error');
+                    stopQrScanner();
+                });
             }
 
             function tick() {
@@ -848,17 +870,20 @@
             // --- NFC Scanning Functionality ---
             function startNfcScan() {
                 if (!('NDEFReader' in window)) {
-                    alert('NFC not supported on this device.');
+                    showPermissionModal('NFC not supported on this device.', 'error');
                     return;
                 }
 
                 const ndef = new NDEFReader();
                 ndef.scan().then(() => {
                     scanNfcBtn.classList.add('scanning-active');
-                    alert('Ready to scan NFC tag');
+                    showPermissionModal('Ready to scan NFC tag', 'info');
                     
                     ndef.onreadingerror = () => {
-                        alert('NFC read error. Try again.');
+                        if (navigator.vibrate) {
+                            navigator.vibrate([100, 50, 100]);
+                        }
+                        showPermissionModal('NFC read error. Try again.', 'error');
                         scanNfcBtn.classList.remove('scanning-active');
                     };
                     
@@ -881,17 +906,28 @@
                         }
                         
                         if (nfcId) {
+                            // Vibrate on successful scan
+                            if (navigator.vibrate) {
+                                navigator.vibrate(200);
+                            }
+                            
                             ndef.onreading = null;
                             scanNfcBtn.classList.remove('scanning-active');
                             scanNfcBtn.classList.add('scan-success');
                             setTimeout(() => scanNfcBtn.classList.remove('scan-success'), 1000);
                             processScannedId(nfcId.trim());
                         } else {
-                            alert('No valid ID found on NFC tag.');
+                            if (navigator.vibrate) {
+                                navigator.vibrate([100, 50, 100]);
+                            }
+                            showPermissionModal('No valid ID found on NFC tag.', 'error');
                         }
                     };
                 }).catch(error => {
-                    alert('NFC error: ' + error.message);
+                    if (navigator.vibrate) {
+                        navigator.vibrate([100, 50, 100]);
+                    }
+                    showPermissionModal('NFC error: ' + error.message, 'error');
                     scanNfcBtn.classList.remove('scanning-active');
                 });
             }
@@ -906,6 +942,10 @@
                 // Check if already scanned in this session
                 const existingRecord = attendanceDataForCurrentSession.find(rec => rec.id === id);
                 if (existingRecord) {
+                    // Vibrate with error pattern
+                    if (navigator.vibrate) {
+                        navigator.vibrate([100, 50, 100]);
+                    }
                     showPermissionModal(`${existingRecord.name} already marked as ${existingRecord.status} for this session.`, 'error');
                     return;
                 }
@@ -918,6 +958,11 @@
                 let student = studentsDB.find(s => s.id === id);
 
                 if (student) {
+                    // Vibrate with success pattern
+                    if (navigator.vibrate) {
+                        navigator.vibrate(200);
+                    }
+
                     // Update counts
                     if (determinedStatus === 'Late') {
                         student.lateCount = (student.lateCount || 0) + 1;
@@ -948,6 +993,11 @@
                     updateExportSubjectOptions();
                     showPermissionModal(`${student.name} marked as ${determinedStatus}`, 'info');
                 } else {
+                    // Vibrate with new student pattern
+                    if (navigator.vibrate) {
+                        navigator.vibrate([100, 50, 200]);
+                    }
+                    
                     // New student
                     pendingStudentScan = {
                         id: id,
