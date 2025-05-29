@@ -520,6 +520,23 @@
             background-color: var(--success) !important;
             color: white !important;
         }
+
+        .stop-scan-btn {
+            margin-top: 15px;
+            padding: 8px 16px;
+            background-color: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .stop-scan-btn:hover {
+            background-color: #c0392b;
+            transform: translateY(-1px);
+        }
     </style>
 </head>
 <body>
@@ -654,6 +671,7 @@
                     </div>
                 </div>
                 <p style="color: white; margin-top: 15px;">Scanning for NFC tag...</p>
+                <button class="stop-scan-btn" id="stop-nfc-btn">Stop NFC Scan</button>
             </div>
 
             <!-- Add Status Toast -->
@@ -1049,7 +1067,6 @@
                 ndef.scan().then(() => {
                     nfcScanning = true;
                     scanNfcBtn.classList.add('scanning-active');
-                    scanNfcBtn.textContent = 'Stop NFC Scan';
                     showNfcAnimation(true);
                     
                     ndef.onreadingerror = () => {
@@ -1081,7 +1098,6 @@
                             if (navigator.vibrate) {
                                 navigator.vibrate(200);
                             }
-                            
                             processScannedId(nfcId.trim());
                         } else {
                             if (navigator.vibrate) {
@@ -1584,6 +1600,9 @@
             });
 
             cancelStudentBtn.addEventListener('click', hideNewStudentModal);
+
+            // Update event listeners
+            document.getElementById('stop-nfc-btn').addEventListener('click', stopNfcScan);
         });
     </script>
 </body>
