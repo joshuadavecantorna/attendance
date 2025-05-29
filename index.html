@@ -426,7 +426,7 @@
             padding: 20px;
             border-radius: 12px;
             display: none;
-            z-index: 1000;
+            z-index: 999;
             text-align: center;
         }
 
@@ -498,12 +498,21 @@
         .status-toast.show {
             opacity: 1;
         }
+
+        /* Ensure logout button is always clickable */
+        #logout-btn {
+            position: relative;
+            z-index: 1001;
+            margin: 2rem auto;
+            width: calc(100% - 2rem);
+            max-width: 400px;
+        }
     </style>
 </head>
 <body>
     <div class="container fade-in">
         <div class="logo">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/e/e0/University_of_Southern_Mindanao_Seal.svg" alt="USM Logo">
+            <img src="https://www.usm.edu.ph/wp-content/uploads/2024/07/usm_logo_1954.png" alt="USM Logo">
             <h3>University of Southern Mindanao</h3>
             <p>Attendance Management System</p>
         </div>
@@ -996,6 +1005,10 @@
             function showNfcAnimation(show) {
                 const animation = document.getElementById('nfc-animation');
                 animation.style.display = show ? 'block' : 'none';
+                // Hide animation when stopping NFC scan
+                if (!show) {
+                    scanNfcBtn.classList.remove('scanning-active');
+                }
             }
 
             function startNfcScan() {
@@ -1195,6 +1208,12 @@
             });
 
             logoutBtn.addEventListener('click', () => {
+                // Stop NFC scanning if active
+                showNfcAnimation(false);
+                // Stop QR scanning if active
+                if (qrScanningActive) {
+                    stopQrScanner();
+                }
                 localStorage.removeItem('loggedInUser');
                 loggedInUser = null;
                 currentCourse = null;
@@ -1204,7 +1223,6 @@
                 currentSessionId = null;
                 attendanceDataForCurrentSession = [];
                 showAuthSection();
-                stopQrScanner();
             });
 
             startSessionBtn.addEventListener('click', () => {
