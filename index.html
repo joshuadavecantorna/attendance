@@ -9,17 +9,17 @@
     <style>
         /* Modern Color Scheme */
         :root {
-            --primary: #4361EE;       /* Vibrant blue */
-            --primary-dark: #3A56D4;  /* Darker blue */
-            --secondary: #7209B7;     /* Purple accent */
-            --success: #2ECC71;       /* Green */
-            --warning: #F39C12;       /* Orange */
-            --danger: #E74C3C;        /* Red */
-            --light: #F8F9FA;         /* Light gray */
-            --dark: #212529;          /* Dark gray */
-            --text: #333333;          /* Primary text */
-            --text-light: #6C757D;    /* Secondary text */
-            --border: #E0E0E0;        /* Border color */
+            --primary: #2E7D32;       /* Dark green */
+            --primary-dark: #1B5E20;  /* Darker green */
+            --secondary: #FFC107;     /* Yellow */
+            --success: #4CAF50;       /* Light green */
+            --warning: #FFB300;       /* Amber */
+            --danger: #E74C3C;        /* Red - keeping for error states */
+            --light: #F8F9FA;         /* Light gray - keeping */
+            --dark: #212529;          /* Dark gray - keeping */
+            --text: #333333;          /* Primary text - keeping */
+            --text-light: #6C757D;    /* Secondary text - keeping */
+            --border: #E0E0E0;        /* Border color - keeping */
         }
 
         /* Base Styles */
@@ -116,8 +116,7 @@
 
         input:focus, select:focus {
             border-color: var(--primary);
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+            box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.2);
         }
 
         /* Buttons */
@@ -147,10 +146,11 @@
 
         .btn-secondary {
             background-color: var(--secondary);
-            color: white;
+            color: #000; /* Dark text for better contrast on yellow */
         }
 
         .btn-secondary:hover {
+            background-color: #FFD54F; /* Lighter yellow on hover */
             opacity: 0.9;
             transform: translateY(-1px);
         }
@@ -162,7 +162,7 @@
         }
 
         .btn-outline:hover {
-            background-color: rgba(67, 97, 238, 0.1);
+            background-color: rgba(46, 125, 50, 0.1); /* Light green background */
         }
 
         .btn-block {
@@ -204,13 +204,13 @@
         }
 
         .status-present {
-            background-color: rgba(46, 204, 113, 0.2);
-            color: var(--success);
+            background-color: rgba(76, 175, 80, 0.2);
+            color: #2E7D32;
         }
 
         .status-late {
-            background-color: rgba(231, 76, 60, 0.2);
-            color: var(--danger);
+            background-color: rgba(255, 193, 7, 0.2);
+            color: #FF8F00;
         }
 
         /* Student List */
@@ -353,6 +353,7 @@
         .counter-value {
             font-size: 1.5rem;
             font-weight: 600;
+            color: var(--primary);
         }
 
         .counter-label {
@@ -507,6 +508,17 @@
             margin: 2rem auto;
             width: calc(100% - 2rem);
             max-width: 400px;
+        }
+
+        /* Scanner Active State */
+        .scanning-active {
+            background-color: var(--secondary) !important;
+            color: #000 !important;
+        }
+
+        .scan-success {
+            background-color: var(--success) !important;
+            color: white !important;
         }
     </style>
 </head>
